@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from fastapi.responses import RedirectResponse
 from typing import Dict, Any
 import joblib, pandas as pd, numpy as np
-import io, csv, os
+import io, csv, os, zipfile
 
 # -----------------------------------------------------------------------------
 # Config de l’app
@@ -29,6 +29,13 @@ EXPECTED_COLS = ["length", "height_left", "height_right", "margin_low", "margin_
 # --- Chemins robustes (relatifs au fichier app.py) ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODELS_DIR = os.path.join(BASE_DIR, "models")  # <-- sous-dossier 'models'
+MODELS_ZIP = os.path.join(BASE_DIR, "models.zip")
+
+# Décompression auto si models/ n’existe pas mais models.zip est présent
+if not os.path.isdir(MODELS_DIR) and os.path.exists(MODELS_ZIP):
+    with zipfile.ZipFile(MODELS_ZIP, "r") as z:
+        z.extractall(MODELS_DIR)
+
 MODEL_PATHS = {
     "logreg":  os.path.join(MODELS_DIR, "log_model_25_08_2025.sav"),
     "knn":     os.path.join(MODELS_DIR, "knn_model_25_08_2025.sav"),
@@ -160,8 +167,6 @@ def _predict_all(df_num: pd.DataFrame, X_scaled: np.ndarray) -> Dict[str, Any]:
 # -----------------------------------------------------------------------------
 # Endpoints
 # -----------------------------------------------------------------------------
-
-
 @app.get("/")
 def root():
     """
@@ -182,11 +187,6 @@ def root():
         },
         "expected_cols": ["length", "height_left", "height_right", "margin_low", "margin_up", "diagonal"]
     }
-
-# (Optionnel) Si tu préfères rediriger l’accueil vers /docs, remplace le root() ci-dessus par:
-# @app.get("/")
-# def root_redirect():
-#     return RedirectResponse(url="/docs")
 
 @app.get("/health")
 def health():
@@ -221,7 +221,6 @@ def predict_one(billet: Billet):
         },
         "avg_positive_probability": res["avg_positive_probability"],
     }
-
 
 @app.post("/predict_csv")
 async def predict_csv(file: UploadFile = File(...), sample_rows: int = 10):
