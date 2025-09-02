@@ -11,5 +11,9 @@ joblib==1.2.0
 
 python-multipart==0.0.9
 
-streamlit==1.39.0
+streamlit==1.36.0
 requests==2.32.3
+pandas==2.2.2
+numpy==1.26.4
+
+
