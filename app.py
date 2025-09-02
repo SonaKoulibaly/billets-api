@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from fastapi.responses import RedirectResponse
 from typing import Dict, Any
 import joblib, pandas as pd, numpy as np
-import io, csv, os, zipfile
+import io, csv, os, zipfile, shutil  # <-- ajout de shutil
 
 # -----------------------------------------------------------------------------
 # Config de l’app
@@ -43,6 +43,62 @@ MODEL_PATHS = {
     "kmeans":  os.path.join(MODELS_DIR, "kmeans_model_25_08_2025.sav"),
     "scaler":  os.path.join(MODELS_DIR, "standard_scaler.sav"),
 }
+
+# --- Auto-unzip + flatten du dossier models ---
+import zipfile, shutil
+
+def _ensure_models_present():
+    # 1) Si models/ est vide ou ne contient pas les .sav, tenter de dézipper models.zip
+    need_unzip = False
+    if not os.path.exists(MODELS_DIR):
+        os.makedirs(MODELS_DIR, exist_ok=True)
+        need_unzip = True
+    else:
+        # cherche des .sav directement à la racine de models/
+        has_sav = any(f.endswith(".sav") for f in os.listdir(MODELS_DIR))
+        need_unzip = not has_sav
+
+    zip_path = os.path.join(BASE_DIR, "models.zip")
+    if need_unzip and os.path.exists(zip_path):
+        try:
+            with zipfile.ZipFile(zip_path, "r") as z:
+                z.extractall(MODELS_DIR)
+        except Exception as e:
+            raise RuntimeError(f"Echec unzip de {zip_path}: {e}")
+
+    # 2) Si après unzip on a un sous-dossier unique (ex: models/models/...), on remonte les .sav
+    entries = [e for e in os.listdir(MODELS_DIR) if not e.startswith(".")]
+    if len(entries) == 1:
+        only = os.path.join(MODELS_DIR, entries[0])
+        if os.path.isdir(only):
+            # déplacer tous les .sav du sous-dossier vers MODELS_DIR
+            for root, _, files in os.walk(only):
+                for f in files:
+                    if f.endswith(".sav"):
+                        src = os.path.join(root, f)
+                        dst = os.path.join(MODELS_DIR, f)
+                        if not os.path.exists(dst):
+                            shutil.move(src, dst)
+            # on peut laisser le sous-dossier, ce n'est pas bloquant
+
+    # 3) Vérification finale
+    expected = [
+        "log_model_25_08_2025.sav",
+        "knn_model_25_08_2025.sav",
+        "rf_model_25_08_2025.sav",
+        "kmeans_model_25_08_2025.sav",
+        "standard_scaler.sav",
+    ]
+    missing = [f for f in expected if not os.path.exists(os.path.join(MODELS_DIR, f))]
+    if missing:
+        raise RuntimeError(
+            "Fichiers modèles manquants après préparation: "
+            + ", ".join(missing)
+            + f"\nMODELS_DIR={MODELS_DIR}\nContenu: {os.listdir(MODELS_DIR)}"
+        )
+
+# appelle la préparation AVANT de charger les modèles
+_ensure_models_present()
 
 LABELS = {"0": "Faux", "1": "Vrai"}  # mapping affichage
 
