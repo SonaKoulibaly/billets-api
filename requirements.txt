@@ -1,8 +1,12 @@
 fastapi==0.112.0
 uvicorn[standard]==0.30.0
 pydantic==1.10.15
-pandas==2.2.2
-numpy==1.26.4
-scikit-learn==1.4.2
-joblib==1.4.2
+
+# Pile scientifique compatible scikit-learn 1.0.2
+pandas==1.5.3
+numpy==1.21.6
+scipy==1.7.3
+scikit-learn==1.0.2
+joblib==1.2.0
+
 python-multipart==0.0.9
