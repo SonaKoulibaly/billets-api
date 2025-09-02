@@ -10,3 +10,6 @@ scikit-learn==1.0.2
 joblib==1.2.0
 
 python-multipart==0.0.9
+
+streamlit==1.39.0
+requests==2.32.3
