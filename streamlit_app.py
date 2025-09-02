@@ -5,6 +5,10 @@ import pandas as pd
 import numpy as np
 import io
 
+# ---------- URL API (Render par défaut) ----------
+api_url_default = "https://billets-api-1.onrender.com"  # URL Render
+api_url = api_url_default  # utilisée par défaut
+
 # ---------- Page config ----------
 st.set_page_config(
     page_title="Billets — Vrai/Faux",
@@ -76,8 +80,11 @@ st.markdown("""
 
 # ---------- Sidebar : config API ----------
 st.sidebar.header("⚙️ Paramètres API")
-api_url_default = "http://127.0.0.1:8000"
-api_url = st.sidebar.text_input("URL de l’API FastAPI", value=api_url_default, help="Ex: http://127.0.0.1:8000")
+api_url = st.sidebar.text_input(
+    "URL de l’API FastAPI",
+    value=api_url_default,  # prérempli avec Render
+    help="Ex: https://billets-api-1.onrender.com"
+)
 test_btn = st.sidebar.button("Tester la connexion")
 
 # ---------- Health check ----------
@@ -85,7 +92,7 @@ api_ok = False
 health_info = {}
 if test_btn:
     try:
-        r = requests.get(f"{api_url}/health", timeout=8)
+        r = requests.get(f"{api_url}/health", timeout=25)
         if r.ok:
             api_ok = True
             health_info = r.json()
