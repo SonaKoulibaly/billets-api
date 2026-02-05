@@ -1,1 +1,2 @@
-API Detection de faux /vrais billets partie
+ Detection de faux /vrais billets en euros (Machine learning) partie API
+
